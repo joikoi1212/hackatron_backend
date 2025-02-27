@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import cookie from "cookie";
+import {parse} from "cookie";
 import { allowCors } from "../../lib/cors";
 
 // Valida se o método que está a ser chamado é o correto: "GET"
@@ -10,7 +10,7 @@ async function handler(req, res) {
 
   try {
     // 🔹 Garante que o header "cookie" existe antes de tentar analisá-lo
-    const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
+    const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
     const token = cookies.token || null;
 
     // 🔹 Verifica se o token está presente

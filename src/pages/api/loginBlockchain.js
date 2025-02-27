@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { allowCors } from "../../lib/cors";
 
 // Configuração correta do cookie para produção
-const cookieOptions = "HttpOnly; Secure; SameSite=None; Path=/; Domain=api-antonio.nstech.pt";
+const cookieOptions = "HttpOnly; Secure; SameSite=None; Path=/; Domain=.nstech.pt";
 
 // Valida se o método que está a ser chamado é o correto: "POST"
 async function handler(req, res) {

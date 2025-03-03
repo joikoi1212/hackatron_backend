@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import {parse} from "cookie";
+import { parse } from "cookie";
 import { allowCors } from "../../lib/cors";
 
 // Valida se o método que está a ser chamado é o correto: "GET"

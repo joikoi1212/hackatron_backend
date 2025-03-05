@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { parse } from "cookie";
-import { allowCors } from "../../lib/cors";
+import { allowCors } from "../../lib/cors_api_expogo";
 
 // Valida se o método que está a ser chamado é o correto: "GET"
 async function handler(req, res) {

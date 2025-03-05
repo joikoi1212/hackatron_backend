@@ -1,4 +1,4 @@
-import { allowCors } from "../../lib/cors";
+import { allowCors } from "../../lib/cors_api_expogo";
 
 async function handler(req, res) {
   if (req.method !== "POST") {

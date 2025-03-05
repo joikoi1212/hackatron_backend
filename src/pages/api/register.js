@@ -1,6 +1,6 @@
 import pool from "../../lib/db";
 import bcrypt from "bcrypt";
-import { allowCors } from "../../lib/cors";
+import { allowCors } from "../../lib/cors_api_expogo";
 
 // Valida se o metodo que está a ser chamado é o correto : "POST"
 async function handler(req, res) {

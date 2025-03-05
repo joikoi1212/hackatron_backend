@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import jwt from "jsonwebtoken";
-import { allowCors } from "../../lib/cors";
+import { allowCors } from "../../lib/cors_api_expogo";
 
 // Configuração correta do cookie para produção
 const cookieOptions = "HttpOnly; Secure; SameSite=None; Path=/; Domain=.nstech.pt";

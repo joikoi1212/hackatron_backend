@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { allowCors } from "../../lib/cors";
+import { allowCors } from "../../lib/cors_api_expogo";
 
 // Valida se o metodo que está a ser chamado é o correto : "GET"
 async function handler(req, res) {

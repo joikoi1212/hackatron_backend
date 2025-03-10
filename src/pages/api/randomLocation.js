@@ -51,6 +51,7 @@ async function getRandomLocation() {
         }
 
         const location = rows[0];
+        console.log(location)
         return {
             latitude: location.latitude,
             longitude: location.longitude,

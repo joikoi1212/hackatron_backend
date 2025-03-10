@@ -50,17 +50,18 @@ async function handler(req, res) {
 async function getRandomLocation(connection, country) {
   try {
     let query = "SELECT lat, lng FROM mytable ORDER BY RAND() LIMIT 1";
+    let queryParams = [];
 
-    // If a country is provided, filter by country
-    if (country) {
+    // If a country is provided and it's not an empty string
+    if (country && country.trim() !== "") {
       query = "SELECT lat, lng FROM mytable WHERE country = ? ORDER BY RAND() LIMIT 1";
-      const [rows] = await connection.execute(query, [country]);
-      return rows.length > 0 ? { latitude: rows[0].lat, longitude: rows[0].lng } : null;
-    } else {
-      // If no country is selected, return a random location from all countries
-      const [rows] = await connection.execute(query);
-      return rows.length > 0 ? { latitude: rows[0].lat, longitude: rows[0].lng } : null;
+      queryParams = [country];  // Country should be passed as a parameter
     }
+
+    // Execute the query with the appropriate parameters
+    const [rows] = await connection.execute(query, queryParams);
+
+    return rows.length > 0 ? { latitude: rows[0].lat, longitude: rows[0].lng } : null;
   } catch (error) {
     console.error("Error while fetching random location from the database:", error);
     return null;

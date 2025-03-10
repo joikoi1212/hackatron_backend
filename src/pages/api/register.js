@@ -1,5 +1,6 @@
 import pool from "../../lib/db"; // Assuming pool is your database connection module
 import crypto from "crypto"; // For generating a secure API key
+import bcrypt from "bcrypt"; // Import bcrypt for password hashing
 
 // Handle user registration and API key creation
 async function handler(req, res) {
@@ -26,19 +27,22 @@ async function handler(req, res) {
       return res.status(400).json({ error: "Usuário já existe" });
     }
 
-    // Step 2: Insert the user into the 'users' table
-    const [result] = await connection.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, password]);
+    // Step 2: Encrypt the password before storing it in the database
+    const hashedPassword = await bcrypt.hash(password, 10); // Hash the password with a salt round of 10
 
-    // Step 3: Generate an API key for the new user
+    // Step 3: Insert the user into the 'users' table with the hashed password
+    const [result] = await connection.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, hashedPassword]);
+
+    // Step 4: Generate an API key for the new user
     const apiKey = crypto.randomBytes(32).toString("hex");
 
-    // Step 4: Insert the API key into the 'api_keys' table
+    // Step 5: Insert the API key into the 'api_keys' table
     await connection.execute("INSERT INTO api_keys (user_id, api_key) VALUES (?, ?)", [result.insertId, apiKey]);
 
     // Release the connection
     connection.release();
 
-    // Step 5: Return the API key to the user
+    // Step 6: Return the API key to the user
     return res.status(201).json({
       message: "Usuário registrado com sucesso!",
       apiKey: apiKey, // Return the generated API key to the user

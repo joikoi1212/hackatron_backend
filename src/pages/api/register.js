@@ -1,15 +1,15 @@
-import pool from "../../lib/db";
-import bcrypt from "bcrypt";
-import { allowCors } from "../../lib/cors_api_expogo";
+import pool from "../../lib/db"; // Assuming pool is your database connection module
+import crypto from "crypto"; // For generating a secure API key
 
-// Valida se o metodo que está a ser chamado é o correto : "POST"
+// Handle user registration and API key creation
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método não permitido" });
   }
 
-  // Valida se o username e a password estão preenchidas
   const { username, password } = req.body;
+
+  // Validate if username and password are provided
   if (!username || !password) {
     return res.status(400).json({ error: "Parâmetros inválidos" });
   }
@@ -17,30 +17,38 @@ async function handler(req, res) {
   let connection;
   try {
     connection = await pool.getConnection();
-    //Valida se o utlizador já existe
+
+    // Step 1: Check if the username already exists
     const [existingUser] = await connection.execute("SELECT id FROM users WHERE username = ?", [username]);
 
-    // Se o utilizador já existir, retorna um erro
     if (existingUser.length > 0) {
-      connection.release();
-      return res.status(400).json({ error: "Utilizador já existe" });
+      connection.release(); // Release the connection
+      return res.status(400).json({ error: "Usuário já existe" });
     }
 
-    // Encripto a password com bcrypt
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Step 2: Insert the user into the 'users' table
+    const [result] = await connection.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, password]);
 
-    // Insere o utilizador na base de dados
-    await connection.execute("INSERT INTO users (username, password) VALUES (?, ?)", [username, hashedPassword]);
+    // Step 3: Generate an API key for the new user
+    const apiKey = crypto.randomBytes(32).toString("hex");
 
-    // Liberta a conexão
+    // Step 4: Insert the API key into the 'api_keys' table
+    await connection.execute("INSERT INTO api_keys (user_id, api_key) VALUES (?, ?)", [result.insertId, apiKey]);
+
+    // Release the connection
     connection.release();
-    return res.status(201).json({ message: "Utilizador registado com sucesso!" });
+
+    // Step 5: Return the API key to the user
+    return res.status(201).json({
+      message: "Usuário registrado com sucesso!",
+      apiKey: apiKey, // Return the generated API key to the user
+    });
+
   } catch (error) {
-    if (connection) connection.release();
-    console.error("Erro ao registar utilizador");
-    return res.status(500).json({ error: "Erro ao registar utilizador" });
+    if (connection) connection.release(); // Ensure the connection is released
+    console.error("Erro ao registrar o usuário e gerar a chave API:", error);
+    return res.status(500).json({ error: "Erro ao registrar o usuário e gerar a chave API" });
   }
 }
 
-// Garante o bloqueio de CORS - Cross-Origin Resource Sharing.
-export default allowCors(handler);
+export default handler;

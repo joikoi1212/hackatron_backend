@@ -44,15 +44,13 @@ async function handler(req, res) {
       { expiresIn: "2h" }
     );
 
-    // Fetch the apiKey from the database (you can change the query if needed)
+    // Fetch the apiKey from the database (if it exists)
     const [apiKeyRows] = await connection.execute("SELECT api_key FROM api_keys WHERE user_id = ?", [user.id]);
 
-    if (apiKeyRows.length === 0) {
-      connection.release();
-      return res.status(401).json({ error: "Chave de API não encontrada para o usuário" });
+    let apiKey = null;
+    if (apiKeyRows.length > 0) {
+      apiKey = apiKeyRows[0].api_key;
     }
-
-    const apiKey = apiKeyRows[0].api_key; // Assuming api_key is the field name
 
     // Adiciona o token ao cookie de forma segura
     res.setHeader(
@@ -67,7 +65,7 @@ async function handler(req, res) {
     return res.status(200).json({
       success: true, 
       token: token,      // JWT token
-      apiKey: apiKey     // apiKey fetched from the database
+      apiKey: apiKey     // apiKey fetched from the database (may be null)
     });
 
   } catch (error) {

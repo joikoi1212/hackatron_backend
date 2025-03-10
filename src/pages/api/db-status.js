@@ -1,7 +1,6 @@
 import pool from "../../lib/db";
 import { allowCors } from "../../lib/cors_api_expogo";
 
-
 // Valida se o metodo que está a ser chamado é o correto : "GET"
 async function handler(req, res) {
   if (req.method !== "GET") {
@@ -19,4 +18,4 @@ async function handler(req, res) {
 }
 
 // Garante o bloqueio de CORS - Cross-Origin Resource Sharing.
-export default allowCors();
+export default allowCors(handler);

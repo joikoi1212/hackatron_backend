@@ -9,30 +9,30 @@ export function allowCors(handler) {
 
     const isPublicAPI = process.env.PUBLIC_API === "true";
 
-    // ✅ Permitir Expo Go (Android e iOS)
-    const isExpoGoAndroid = userAgent.includes("okhttp"); // Expo Go em Android
-    const isExpoGoIOS = /Expo\/\d+ CFNetwork\/\d+\.\d+\.\d+ Darwin\/\d+\.\d+\.\d+/.test(userAgent); // Expo Go em iOS
+    // ✅ Allow requests from Expo Go (Android and iOS)
+    const isExpoGoAndroid = userAgent.includes("okhttp"); // Expo Go on Android
+    const isExpoGoIOS = /Expo\/\d+ CFNetwork\/\d+\.\d+\.\d+ Darwin\/\d+\.\d+\.\d+/.test(userAgent); // Expo Go on iOS
 
     const isExpoGo = isExpoGoAndroid || isExpoGoIOS;
 
-    // 🔹 Se não for API pública, faz a verificação de origens permitidas
-    if (!isPublicAPI && !allowedOrigins.includes(origin) && !(isPostmanAllowed && isPostmanRequest) && !isExpoGo) {
-      console.error(`🚨 Bloqueio de CORS: ${origin} não autorizado. User-Agent: ${userAgent}`);
-      return res.status(403).json({ error: "Acesso negado: Origem ou ferramenta não autorizada" });
+    // 🔹 If it's not a public API, check allowed origins
+    if (!isPublicAPI && !(allowedOrigins.includes(origin) || isExpoGo || (isPostmanAllowed && isPostmanRequest))) {
+      console.error(`🚨 CORS Block: ${origin} not allowed. User-Agent: ${userAgent}`);
+      return res.status(403).json({ error: "Access denied: Origin or tool not authorized" });
     }
 
-    // 🔹 Define os cabeçalhos CORS corretamente
+    // 🔹 Define CORS headers correctly
     res.setHeader("Access-Control-Allow-Origin", isPublicAPI ? "*" : origin);
-    res.setHeader("Access-Control-Allow-Credentials", isPublicAPI ? "false" : "true"); // ⚠ Não pode ser "true" com "*"
+    res.setHeader("Access-Control-Allow-Credentials", isPublicAPI ? "false" : "true"); // ⚠ Cannot be "true" with "*"
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT, DELETE");
     res.setHeader(
       "Access-Control-Allow-Headers",
       "X-Requested-With, Content-Type, Authorization, Cookie, Set-Cookie"
     );
 
-    // 🔹 Responde imediatamente a requisições OPTIONS (Preflight)
+    // 🔹 Respond immediately to OPTIONS requests (Preflight)
     if (req.method === "OPTIONS") {
-      console.log(`🟢 Requisição OPTIONS permitida para: ${origin} (Expo Go: ${isExpoGo})`);
+      console.log(`🟢 OPTIONS request allowed for: ${origin} (Expo Go: ${isExpoGo})`);
       return res.status(204).end();
     }
 

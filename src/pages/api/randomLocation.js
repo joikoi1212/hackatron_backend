@@ -53,8 +53,8 @@ async function getRandomLocation() {
         const location = rows[0];
         console.log(location)
         return {
-            latitude: location.latitude,
-            longitude: location.longitude,
+            latitude: location.lat,  // Corrected property name
+            longitude: location.lng  // Corrected property name
         };
 
     } catch (error) {

@@ -50,10 +50,16 @@ async function handler(req, res) {
       `token=${token}; Path=/; HttpOnly; Secure; SameSite=None; Domain=.nstech.pt; Max-Age=7200`
     );
     
-    
     // Liberta a conexão
     connection.release();
-    return res.status(200).json({ success: true, token });
+    
+    // Return both token and apiKey in the response
+    return res.status(200).json({
+      success: true, 
+      token: token,      // Original token field
+      apiKey: token      // apiKey field (you can also use different tokens if needed)
+    });
+
   } catch (error) {
     if (connection) connection.release();
     console.error("Erro na autenticação:", error);

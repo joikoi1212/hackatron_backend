@@ -1,76 +1,70 @@
 import pool from "../../lib/db";  // Database connection
 import { allowCors } from "../../lib/cors_api_expogo";  // CORS middleware
 
-// Verifies if the user has a valid API key
+// API handler to get a random location based on a country
 async function handler(req, res) {
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Método não permitido" });  // Only GET method is allowed
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   // Get the API key from the Authorization header
-  const apiKey = req.headers.authorization?.split(" ")[1]; // Assumes the token is in the "Authorization" header
+  const apiKey = req.headers.authorization?.split(" ")[1];
 
   if (!apiKey) {
-    return res.status(401).json({ error: "API Key não encontrada" });  // If no API key is provided, return 401 Unauthorized
+    return res.status(401).json({ error: "API Key not found" });
   }
 
   let connection;
   try {
     connection = await pool.getConnection();
 
-    // Step 1: Check if the API key is valid by looking it up in the 'api_keys' table
+    // Check if the API key is valid
     const [rows] = await connection.execute("SELECT user_id FROM api_keys WHERE api_key = ?", [apiKey]);
-
-    // If no valid API key is found
     if (rows.length === 0) {
-      connection.release();  // Release the connection
-      return res.status(401).json({ error: "API Key inválida" });  // Return error if the API key is invalid
+      connection.release();
+      return res.status(401).json({ error: "Invalid API Key" });
     }
 
-    // If the API key is valid, we can proceed to fetch the random location
-    const userId = rows[0].user_id;  // Extract the user ID (if needed)
+    // Check if the country is provided in the query parameters
+    const { country } = req.query;
 
-    // Step 2: Fetch a random location from the database
-    const randomLocation = await getRandomLocation();
+    // Fetch a random location based on the country or a random location overall
+    const randomLocation = await getRandomLocation(connection, country);
 
     if (!randomLocation) {
-      return res.status(404).json({ error: "Localização não encontrada" });  // If no location is found, return 404
+      return res.status(404).json({ error: "Location not found" });
     }
 
     // Respond with the random location data
     return res.status(200).json({ location: randomLocation });
 
   } catch (error) {
-    console.error("Erro ao validar a API Key e buscar localização:", error);
-    return res.status(500).json({ error: "Erro ao processar a requisição" });
+    console.error("Error while fetching random location:", error);
+    return res.status(500).json({ error: "Error processing request" });
   } finally {
-    if (connection) connection.release();  // Ensure the database connection is always released
+    if (connection) connection.release();
   }
 }
 
-// Fetches random location coordinates from the database
-async function getRandomLocation() {
-  let connection;
+// Fetches a random location from the database based on the country
+async function getRandomLocation(connection, country) {
   try {
-    connection = await pool.getConnection();
-    const [rows] = await connection.execute("SELECT lat, lng FROM mytable ORDER BY RAND() LIMIT 1");  // Query to get a random location
+    let query = "SELECT lat, lng FROM mytable ORDER BY RAND() LIMIT 1";
 
-    if (rows.length === 0) {
-      return null;
+    // If a country is provided, filter by country
+    if (country) {
+      query = "SELECT lat, lng FROM mytable WHERE country = ? ORDER BY RAND() LIMIT 1";
+      const [rows] = await connection.execute(query, [country]);
+      return rows.length > 0 ? { latitude: rows[0].lat, longitude: rows[0].lng } : null;
+    } else {
+      // If no country is selected, return a random location from all countries
+      const [rows] = await connection.execute(query);
+      return rows.length > 0 ? { latitude: rows[0].lat, longitude: rows[0].lng } : null;
     }
-
-    const location = rows[0];
-    return {
-      latitude: location.lat,
-      longitude: location.lng
-    };
-
   } catch (error) {
-    console.error("Erro ao buscar a localização aleatória:", error);
+    console.error("Error while fetching random location from the database:", error);
     return null;
-  } finally {
-    if (connection) connection.release();  // Always release the connection after the operation
   }
 }
 
-export default allowCors(handler);  // Use the allowCors middleware to handle CORS
+export default allowCors(handler);  // Use CORS middleware

@@ -47,7 +47,7 @@ async function handler(req, res) {
 }
 
 // Fetches a random location from the database based on the country
-async function getRandomLocation(connection, country) {
+async function getRandomLocation(connection, country, type) {
   try {
     let query = "SELECT lat, lng FROM mytable ORDER BY RAND() LIMIT 1";
     let queryParams = [];

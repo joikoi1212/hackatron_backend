@@ -39,10 +39,13 @@ async function handler(req, res) {
     // Step 5: Insert the API key into the 'api_keys' table
     await connection.execute("INSERT INTO api_keys (user_id, api_key) VALUES (?, ?)", [result.insertId, apiKey]);
 
+    // Step 6: Insert a record into the 'user_points' table with best_score and last_score initialized to 0
+    await connection.execute("INSERT INTO user_points (user_id, best_score, last_score) VALUES (?, 0, 0)", [result.insertId]);
+
     // Release the connection
     connection.release();
 
-    // Step 6: Return the API key to the user
+    // Step 7: Return the API key to the user
     return res.status(201).json({
       message: "Usuário registrado com sucesso!",
       apiKey: apiKey, // Return the generated API key to the user

@@ -18,6 +18,7 @@ async function handler(req, res) {
   let connection;
   try {
     connection = await pool.getConnection();
+
     // Valida se o utilizador existe
     const [rows] = await connection.execute("SELECT id, username, password FROM users WHERE username = ?", [username]);
 
@@ -28,7 +29,8 @@ async function handler(req, res) {
     }
 
     const user = rows[0];
-    //  Valida se a password é válida
+
+    // Valida se a password é válida
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     // Se a password não for válida, retorna um erro
@@ -39,8 +41,8 @@ async function handler(req, res) {
 
     // Gera um token JWT com a chave secreta
     const token = jwt.sign(
-      { id: user.id, username: user.username }, 
-      process.env.JWT_SECRET, 
+      { id: user.id, username: user.username },
+      process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
 
@@ -52,6 +54,19 @@ async function handler(req, res) {
       apiKey = apiKeyRows[0].api_key;
     }
 
+    // Fetch the best_score and last_score for the user
+    const [scoreRows] = await connection.execute(
+      "SELECT best_score, last_score FROM user_points WHERE user_id = ?",
+      [user.id]
+    );
+
+    let bestScore = 0;
+    let lastScore = 0;
+    if (scoreRows.length > 0) {
+      bestScore = scoreRows[0].best_score;
+      lastScore = scoreRows[0].last_score;
+    }
+
     // Adiciona o token ao cookie de forma segura
     res.setHeader(
       "Set-Cookie",
@@ -61,11 +76,13 @@ async function handler(req, res) {
     // Liberta a conexão
     connection.release();
     
-    // Return both token and apiKey in the response
+    // Return both token, apiKey, best_score, and last_score in the response
     return res.status(200).json({
-      success: true, 
+      success: true,
       token: token,      // JWT token
-      apiKey: apiKey     // apiKey fetched from the database (may be null)
+      apiKey: apiKey,    // apiKey fetched from the database (may be null)
+      best_score: bestScore,
+      last_score: lastScore
     });
 
   } catch (error) {

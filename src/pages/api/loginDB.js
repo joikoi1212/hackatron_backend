@@ -1,15 +1,16 @@
-import pool from "../../lib/db"; // Assuming pool is your database connection module
-import bcrypt from "bcrypt"; // Import bcrypt for password comparison
-import { v4 as uuidv4 } from "uuid"; // Import UUID for generating API key
+import pool from "../../lib/db";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { allowCors } from "../../lib/cors_api_expogo";
 
-async function loginHandler(req, res) {
+// Handle user login
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método não permitido" });
   }
 
   const { username, password } = req.body;
 
-  // Validate if username and password are provided
   if (!username || !password) {
     return res.status(400).json({ error: "Parâmetros inválidos" });
   }
@@ -18,37 +19,59 @@ async function loginHandler(req, res) {
   try {
     connection = await pool.getConnection();
 
-    // Step 1: Check if the user exists in the database
-    const [user] = await connection.execute("SELECT id, password FROM users WHERE username = ?", [username]);
+    // Check if user exists
+    const [rows] = await connection.execute("SELECT id, username, password FROM users WHERE username = ?", [username]);
 
-    if (user.length === 0) {
-      connection.release(); // Release the connection
-      return res.status(400).json({ error: "Usuário não encontrado" });
+    if (rows.length === 0) {
+      connection.release();
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
-    // Step 2: Use bcrypt.compare to compare the plain text password with the hashed password
-    const isPasswordCorrect = await bcrypt.compare(password, user[0].password);
+    const user = rows[0];
 
-    if (!isPasswordCorrect) {
-      connection.release(); // Release the connection
-      return res.status(400).json({ error: "Senha incorreta" });
+    // Check password validity
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      connection.release();
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
-    // Step 3: Generate an API key using UUID
-    const apiKey = uuidv4(); // Generate a random UUID as the API key
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
 
-    // Step 4: Return the API key (or some other user info as needed)
+    // Fetch the API Key from the database (if it exists)
+    const [apiKeyRows] = await connection.execute("SELECT api_key FROM api_keys WHERE user_id = ?", [user.id]);
+
+    let apiKey = null;
+    if (apiKeyRows.length > 0) {
+      apiKey = apiKeyRows[0].api_key;
+    }
+
+    // Set token to the cookie securely
+    res.setHeader(
+      "Set-Cookie",
+      `token=${token}; Path=/; HttpOnly; Secure; SameSite=None; Domain=.nstech.pt; Max-Age=7200`
+    );
+
     connection.release();
+
     return res.status(200).json({
-      message: "Login bem-sucedido",
-      apiKey: apiKey, // Return the generated API key to the user
+      success: true,
+      token: token,      // JWT token
+      apiKey: apiKey     // API key fetched from the database (may be null)
     });
 
   } catch (error) {
-    if (connection) connection.release(); // Ensure the connection is released
-    console.error("Erro ao fazer login:", error);
-    return res.status(500).json({ error: "Erro ao fazer login" });
+    if (connection) connection.release();
+    console.error("Erro na autenticação:", error);
+    return res.status(500).json({ error: "Erro ao autenticar utilizador" });
   }
 }
 
-export default loginHandler;
+// Enable CORS
+export default allowCors(handler);

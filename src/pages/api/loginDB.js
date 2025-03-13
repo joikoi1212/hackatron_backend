@@ -67,12 +67,14 @@ async function handler(req, res) {
 
     connection.release();
 
+    // Return the user ID along with the other details
     return res.status(200).json({
       success: true,
       token: token,      // JWT token
       apiKey: apiKey,    // API key fetched from the database (may be null)
       best_score: best_score,  // Best score from the scores table
-      last_score: last_score   // Last score from the scores table
+      last_score: last_score,  // Last score from the scores table
+      user_id: user.id   // Return the user ID
     });
 
   } catch (error) {

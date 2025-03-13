@@ -19,18 +19,25 @@ async function handler(req, res) {
     connection = await pool.getConnection();
 
     // Check if the API key is valid and fetch the associated user_id
+    console.log("Received API key:", apiKey);  // Debugging: Log API key
+
     const [rows] = await connection.execute("SELECT user_id FROM api_keys WHERE api_key = ?", [apiKey]);
+
+    // Debugging: Check if the query returns results
     if (rows.length === 0) {
+      console.log("API key not found in database.");
       connection.release();
       return res.status(401).json({ error: "Invalid API Key" });
     }
 
     const userId = rows[0].user_id;
+    console.log("User ID found:", userId);  // Debugging: Log User ID
 
     // Fetch the best_score and last_score for the user
     const scores = await getUserScores(connection, userId);
 
     if (!scores) {
+      console.log("Scores not found for user ID:", userId);  // Debugging: Log if scores are not found
       return res.status(404).json({ error: "Scores not found" });
     }
 
@@ -53,6 +60,9 @@ async function getUserScores(connection, userId) {
   try {
     const query = "SELECT best_score, last_score FROM user_points WHERE user_id = ?";
     const [rows] = await connection.execute(query, [userId]);
+
+    // Debugging: Log the rows fetched from the database
+    console.log("Fetched scores for user:", rows);
 
     return rows.length > 0 ? rows[0] : null;
   } catch (error) {

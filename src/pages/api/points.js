@@ -65,8 +65,8 @@ async function handler(req, res) {
 
       // Update the scores in the user_points table
       await connection.execute(
-        "INSERT INTO user_points (user_id, best_score, last_score) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE best_score = ?, last_score = ?",
-        [userId, bestScore, lastScore, bestScore, lastScore]
+        "UPDATE user_points SET best_score = ?, last_score = ? WHERE user_id = ?",
+        [bestScore, lastScore, userId]
       );
 
       // Release the connection

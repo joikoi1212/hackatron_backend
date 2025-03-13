@@ -38,16 +38,7 @@ async function handler(req, res) {
     }
 
     // Fetch the user's best and last score
-    const [scoreRows] = await connection.execute(
-      `SELECT 
-        MAX(score) AS best_score, 
-        score AS last_score 
-      FROM scores 
-      WHERE user_id = ? 
-      ORDER BY created_at DESC 
-      LIMIT 1`, 
-      [user.id]
-    );
+    const [scoreRows] = await connection.execute("SELECT best_score, last_score FROM user_points WHERE user_id = ?", [user.id]);
 
     // If no scores exist, set default values
     const best_score = scoreRows.length > 0 ? scoreRows[0].best_score : 0;

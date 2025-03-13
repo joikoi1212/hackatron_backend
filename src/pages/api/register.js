@@ -39,6 +39,11 @@ async function handler(req, res) {
     // Step 5: Insert the API key into the 'api_keys' table
     await connection.execute("INSERT INTO api_keys (user_id, api_key) VALUES (?, ?)", [result.insertId, apiKey]);
 
+    await connection.execute(
+      "INSERT INTO user_points (user_id, best_score, last_score) VALUES (?, ?, ?)",
+      [result.insertId, 0, 0]  // Initialize best_score and last_score to 0
+    );
+
     // Release the connection
     connection.release();
 

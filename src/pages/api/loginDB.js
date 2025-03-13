@@ -3,14 +3,14 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { allowCors } from "../../lib/cors_api_expogo";
 
-// Valida se o metodo que está a ser chamado é o correto : "POST"
+// Handle user login
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método não permitido" });
   }
 
-  // Valida se o username e a password estão preenchidas
   const { username, password } = req.body;
+
   if (!username || !password) {
     return res.status(400).json({ error: "Parâmetros inválidos" });
   }
@@ -18,33 +18,49 @@ async function handler(req, res) {
   let connection;
   try {
     connection = await pool.getConnection();
-    // Valida se o utilizador existeYY
+
+    // Check if user exists
     const [rows] = await connection.execute("SELECT id, username, password FROM users WHERE username = ?", [username]);
 
-    // Se o utilizador não existir, retorna um erro
     if (rows.length === 0) {
       connection.release();
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
     const user = rows[0];
-    //  Valida se a password é válida
+
+    // Check password validity
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    // Se a password não for válida, retorna um erro
     if (!isPasswordValid) {
       connection.release();
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
-    // Gera um token JWT com a chave secreta
+    // Fetch the user's best and last score
+    const [scoreRows] = await connection.execute(
+      `SELECT 
+        MAX(score) AS best_score, 
+        score AS last_score 
+      FROM scores 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC 
+      LIMIT 1`, 
+      [user.id]
+    );
+
+    // If no scores exist, set default values
+    const best_score = scoreRows.length > 0 ? scoreRows[0].best_score : 0;
+    const last_score = scoreRows.length > 0 ? scoreRows[0].last_score : 0;
+
+    // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username }, 
-      process.env.JWT_SECRET, 
+      { id: user.id, username: user.username },
+      process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
 
-    // Fetch the apiKey from the database (if it exists)
+    // Fetch the API Key from the database (if it exists)
     const [apiKeyRows] = await connection.execute("SELECT api_key FROM api_keys WHERE user_id = ?", [user.id]);
 
     let apiKey = null;
@@ -52,20 +68,20 @@ async function handler(req, res) {
       apiKey = apiKeyRows[0].api_key;
     }
 
-    // Adiciona o token ao cookie de forma segura
+    // Set token to the cookie securely
     res.setHeader(
       "Set-Cookie",
       `token=${token}; Path=/; HttpOnly; Secure; SameSite=None; Domain=.nstech.pt; Max-Age=7200`
     );
-    
-    // Liberta a conexão
+
     connection.release();
-    
-    // Return both token and apiKey in the response
+
     return res.status(200).json({
-      success: true, 
+      success: true,
       token: token,      // JWT token
-      apiKey: apiKey     // apiKey fetched from the database (may be null)
+      apiKey: apiKey,    // API key fetched from the database (may be null)
+      best_score: best_score,  // Best score from the scores table
+      last_score: last_score   // Last score from the scores table
     });
 
   } catch (error) {
@@ -75,5 +91,5 @@ async function handler(req, res) {
   }
 }
 
-// Garante o bloqueio de CORS - Cross-Origin Resource Sharing.
+// Enable CORS
 export default allowCors(handler);

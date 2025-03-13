@@ -37,20 +37,12 @@ async function handler(req, res) {
 
     // Handle POST request to submit a new score
     if (req.method === "POST") {
-      const { score, apiKey } = req.body;
+      const { score, userId } = req.body;
 
-      if (!score || !apiKey) {
-        return res.status(400).json({ error: "Score and API Key are required" });
+      // Validate input parameters
+      if (score === undefined || userId === undefined) {
+        return res.status(400).json({ error: "Score and userId are required" });
       }
-
-      // Validate API key
-      const [userRows] = await connection.execute("SELECT user_id FROM api_keys WHERE api_key = ?", [apiKey]);
-      if (userRows.length === 0) {
-        connection.release();
-        return res.status(401).json({ error: "Invalid API Key" });
-      }
-
-      const userId = userRows[0].user_id;
 
       // Fetch the current best_score and last_score from user_points table
       const [scoreRows] = await connection.execute("SELECT best_score, last_score FROM user_points WHERE user_id = ?", [userId]);

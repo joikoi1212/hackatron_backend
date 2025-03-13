@@ -7,39 +7,30 @@ async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Get the API key from the Authorization header
-  const apiKey = req.headers.authorization?.split(" ")[1];
+  // Get the user_id from query parameters
+  const { user_id } = req.query;
 
-  if (!apiKey) {
-    return res.status(401).json({ error: "API Key not found" });
+  if (!user_id) {
+    return res.status(400).json({ error: "User ID not found" });
   }
 
   let connection;
   try {
     connection = await pool.getConnection();
 
-    // Check if the API key is valid and fetch the associated user_id
-    console.log("Received API key:", apiKey);  // Debugging: Log API key
-
-    const [rows] = await connection.execute("SELECT user_id FROM api_keys WHERE api_key = ?", [apiKey]);
-
-    // Debugging: Check if the query returns results
-    if (rows.length === 0) {
-      console.log("API key not found in database.");
-      connection.release();
-      return res.status(401).json({ error: "Invalid API Key" });
-    }
-
-    const userId = rows[0].user_id;
-    console.log("User ID found:", userId);  // Debugging: Log User ID
+    // Debug: Log the received user_id
+    console.log("Received user_id:", user_id);
 
     // Fetch the best_score and last_score for the user
-    const scores = await getUserScores(connection, userId);
+    const scores = await getUserScores(connection, user_id);
 
     if (!scores) {
-      console.log("Scores not found for user ID:", userId);  // Debugging: Log if scores are not found
+      console.log("Scores not found for user ID:", user_id);  // Debug: Log if no scores found
       return res.status(404).json({ error: "Scores not found" });
     }
+
+    // Debug: Log the scores fetched
+    console.log("Fetched Scores for user:", scores);
 
     // Respond with the user's best_score and last_score
     return res.status(200).json({
@@ -60,9 +51,6 @@ async function getUserScores(connection, userId) {
   try {
     const query = "SELECT best_score, last_score FROM user_points WHERE user_id = ?";
     const [rows] = await connection.execute(query, [userId]);
-
-    // Debugging: Log the rows fetched from the database
-    console.log("Fetched scores for user:", rows);
 
     return rows.length > 0 ? rows[0] : null;
   } catch (error) {

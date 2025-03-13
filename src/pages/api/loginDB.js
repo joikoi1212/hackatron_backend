@@ -1,5 +1,6 @@
 import pool from "../../lib/db"; // Assuming pool is your database connection module
 import bcrypt from "bcrypt"; // Import bcrypt for password comparison
+import { v4 as uuidv4 } from "uuid"; // Import UUID for generating API key
 
 async function loginHandler(req, res) {
   if (req.method !== "POST") {
@@ -33,8 +34,8 @@ async function loginHandler(req, res) {
       return res.status(400).json({ error: "Senha incorreta" });
     }
 
-    // Step 3: Generate an API key for the user (if necessary)
-    const apiKey = crypto.randomBytes(32).toString("hex");
+    // Step 3: Generate an API key using UUID
+    const apiKey = uuidv4(); // Generate a random UUID as the API key
 
     // Step 4: Return the API key (or some other user info as needed)
     connection.release();

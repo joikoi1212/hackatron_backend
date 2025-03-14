@@ -27,6 +27,11 @@ async function handler(req, res) {
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
+    if(!username.contains('@')) {
+      connection.release();
+      return res.status(1002).json({ error: "Formanto do e-mail inválido" });
+    }
+
     const user = rows[0];
 
     // Check password validity

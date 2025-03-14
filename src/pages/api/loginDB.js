@@ -27,7 +27,7 @@ async function handler(req, res) {
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
-    if(!username.contains('@')) {
+    if(!username.includes('@')) {
       connection.release();
       return res.status(1002).json({ error: "Formanto do e-mail inválido" });
     }

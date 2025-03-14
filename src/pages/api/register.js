@@ -44,6 +44,12 @@ async function handler(req, res) {
       [result.insertId, 0, 0]  // Initialize best_score and last_score to 0
     );
 
+    if(!username.includes('@')) {
+      connection.release();
+      return res.status(1002).json({ error: "Formanto do e-mail inválido" });
+    }
+
+
     // Release the connection
     connection.release();
 

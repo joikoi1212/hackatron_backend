@@ -57,10 +57,16 @@ async function getRandomLocation(connection, country, type) {
       query = "SELECT lat, lng FROM mytable WHERE country = ? ORDER BY RAND() LIMIT 1";
       queryParams = [country];  // Country should be passed as a parameter
     }
-    
-    else {
+    else if ((country && country.trim() == "") && type != null) {
+      query = "SELECT lat, lng FROM mytable WHERE dest_type = ? ORDER BY RAND() LIMIT 1";
+      queryParams = [country, type];
+    }
+    else if ((country && country.trim() == "") && type != null) {
       query = "SELECT lat, lng FROM mytable WHERE country = ? and dest_type = ? ORDER BY RAND() LIMIT 1";
       queryParams = [country, type];
+    }
+    else {
+      query = "SELECT lat, lng FROM mytable ORDER BY RAND() LIMIT 1";
     }
 
     // Execute the query with the appropriate parameters

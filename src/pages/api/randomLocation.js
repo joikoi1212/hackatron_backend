@@ -26,10 +26,10 @@ async function handler(req, res) {
     }
 
     // Check if the country is provided in the query parameters
-    const { country, type } = req.query;
+    const { country } = req.query;
 
     // Fetch a random location based on the country or a random location overall
-    const randomLocation = await getRandomLocation(connection, country, type);
+    const randomLocation = await getRandomLocation(connection, country);
 
     if (!randomLocation) {
       return res.status(404).json({ error: "Location not found" });
@@ -53,20 +53,9 @@ async function getRandomLocation(connection, country, type) {
     let queryParams = [];
 
     // If a country is provided and it's not an empty string
-    if ((country && country.trim() !== "") && type == null) {
+    if (country && country.trim() !== "") {
       query = "SELECT lat, lng FROM mytable WHERE country = ? ORDER BY RAND() LIMIT 1";
       queryParams = [country];  // Country should be passed as a parameter
-    }
-    else if ((country && country.trim() == "") && type != null) {
-      query = "SELECT lat, lng FROM mytable WHERE dest_type = ? ORDER BY RAND() LIMIT 1";
-      queryParams = [country, type];
-    }
-    else if ((country && country.trim() == "") && type != null) {
-      query = "SELECT lat, lng FROM mytable WHERE country = ? and dest_type = ? ORDER BY RAND() LIMIT 1";
-      queryParams = [country, type];
-    }
-    else {
-      query = "SELECT lat, lng FROM mytable ORDER BY RAND() LIMIT 1";
     }
 
     // Execute the query with the appropriate parameters

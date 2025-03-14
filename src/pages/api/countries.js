@@ -28,19 +28,12 @@ async function handler(req, res) {
     // Fetch distinct countries from the database
     const countries = await getCountries(connection);
 
-    const cities = await getCities(connection);
-
     if (countries.length === 0) {
       return res.status(404).json({ error: "No countries found" });
     }
 
-    if (cities.length === 0) {
-      return res.status(404).json({ error: "No countries found" });
-    }
-
-
     // Respond with the list of countries
-    return res.status(200).json({ countries, cities });
+    return res.status(200).json({ countries });
 
   } catch (error) {
     console.error("Error while fetching countries:", error);
@@ -51,17 +44,6 @@ async function handler(req, res) {
 }
 
 // Fetches distinct countries from the 'mytable' database
-async function getCities(connection) {
-  try {
-    const [rows] = await connection.execute("SELECT DISTINCT dest_type FROM mytable");
-    return rows.map(row => row.dest_type);
-  } catch (error) {
-    console.error("Error while fetching countries from the database:", error);
-    return [];
-  }
-}
-
-
 async function getCountries(connection) {
   try {
     const [rows] = await connection.execute("SELECT DISTINCT country FROM mytable");
@@ -71,7 +53,5 @@ async function getCountries(connection) {
     return [];
   }
 }
-
-
 
 export default allowCors(handler);  // Use CORS middleware
